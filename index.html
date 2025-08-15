@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Pixel Board</title>
+  <style>
+    canvas {
+      image-rendering: pixelated;
+      cursor: crosshair;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pixel Board</h1>
+  <canvas id="board" width="50" height="50"></canvas>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co"; // Project URL
+    const SUPABASE_KEY = "YOUR_ANON_KEY"; // anon public key
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const canvas = document.getElementById("board");
+    const ctx = canvas.getContext("2d");
+
+    function drawPixel(x, y, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, 1, 1);
+    }
+
+    async function loadPixels() {
+      const { data } = await supabase.from("pixels").select("*");
+      data.forEach(p => drawPixel(p.x, p.y, p.color));
+    }
+
+    supabase.channel("public:pixels")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "pixels" },
+        payload => {
+          const p = payload.new;
+          drawPixel(p.x, p.y, p.color);
+        })
+      .subscribe();
+
+    canvas.addEventListener("click", async e => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = Math.floor((e.clientX - rect.left) * scaleX);
+      const y = Math.floor((e.clientY - rect.top) * scaleY);
+      const color = prompt("Color (#rrggbb):", "#000000");
+      if (!color) return;
+      await supabase.from("pixels").insert({ x, y, color });
+    });
+
+    loadPixels();
+  </script>
+</body>
+</html>
