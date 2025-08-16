@@ -1,175 +1,22 @@
 <!DOCTYPE html>
-<html lang="kk">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Suret Karta — Pixel Board</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Suretkarta</title>
   <style>
-    :root { --grid-w: 100; --grid-h: 100; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f6f7f9; margin:0; }
-    header { padding: 12px 16px; background:#111827; color:#fff; display:flex; align-items:center; gap:12px; }
-    header h1 { font-size:16px; margin:0; font-weight:600; }
-    main { max-width: 920px; margin: 16px auto; padding: 0 16px 32px; }
-    .panel { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:12px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
-    #controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-    #colorPicker { width: 40px; height: 40px; padding:0; border:none; background:transparent; }
-    .btn { padding:8px 12px; border:1px solid #e5e7eb; border-radius:10px; background:#fff; cursor:pointer; }
-    .btn:active { transform: translateY(1px); }
-    .hint { color:#6b7280; font-size:13px; }
-    .canvas-wrap { margin-top:12px; display:flex; justify-content:center; }
-    canvas { image-rendering: pixelated; border:1px solid #e5e7eb; background:#ffffff; cursor: crosshair; }
-    /* Көрініс үшін canvas-ты үлкейтеміз, бірақ логикалық өлшем — grid */
-    #board { width: 800px; height: 800px; /* CSS масштаб */ }
+    body { display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
+    canvas { border: 1px solid #000; image-rendering: pixelated; cursor: crosshair; }
+    #toolbar { margin: 10px; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Suret Karta — Pixel Board</h1>
-  </header>
+  <h1>Suretkarta</h1>
+  <div id="toolbar">
+    🎨 Түс таңда: <input type="color" id="colorPicker" value="#000000">
+  </div>
+  <canvas id="board" width="50" height="50"></canvas>
 
-  <main>
-    <div class="panel">
-      <div id="controls">
-        <label>Түс:
-          <input type="color" id="colorPicker" value="#000000" title="Түс таңдаңыз" />
-        </label>
-        <button id="eraser" class="btn" title="Өшіру (ақ түс)">Өшіргіш</button>
-        <button id="clearLocal" class="btn" title="Экранды ақпен толтыру (тек көрініс)">Экранды жаңарту</button>
-        <span class="hint">Кеңес: тышқанды басып тұрып боясаңыз — тезірек болады.</span>
-      </div>
-
-      <div class="canvas-wrap">
-        <!-- Логикалық өлшем: 100x100 ұяшық. CSS-пен үлкейтіледі -->
-        <canvas id="board" width="100" height="100"></canvas>
-      </div>
-    </div>
-  </main>
-
-  <script type="module">
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-    // 🟢 Өз жобаңыздың мәндерін қойыңыз
-    const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
-    const SUPABASE_ANON_KEY = "YOUR_ANON_PUBLIC_KEY";
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // Параметрлер
-    const GRID_W = 100;
-    const GRID_H = 100;
-
-    // DOM
-    const canvas = document.getElementById("board");
-    const ctx = canvas.getContext("2d");
-    const colorPicker = document.getElementById("colorPicker");
-    const eraserBtn = document.getElementById("eraser");
-    const clearLocalBtn = document.getElementById("clearLocal");
-
-    // Инициал: ақ фон
-    function initEmptyBoard() {
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, GRID_W, GRID_H);
-    }
-
-    // Ұяшық бояу
-    function drawPixel(x, y, color) {
-      if (x < 0 || y < 0 || x >= GRID_W || y >= GRID_H) return;
-      ctx.fillStyle = color;
-      ctx.fillRect(x, y, 1, 1);
-    }
-
-    // Database-тен барлық пиксельді жүктеу
-    async function loadAll() {
-      initEmptyBoard();
-      const { data, error } = await supabase.from("pixels").select("x,y,color");
-      if (error) {
-        console.error("Load error:", error);
-        return;
-      }
-      data.forEach(p => drawPixel(p.x, p.y, p.color));
-    }
-
-    // Реалтайм: INSERT және UPDATE
-    function subscribeRealtime() {
-      supabase
-        .channel("pixels-stream")
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "pixels" }, (payload) => {
-          const p = payload.new;
-          drawPixel(p.x, p.y, p.color);
-        })
-        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "pixels" }, (payload) => {
-          const p = payload.new;
-          drawPixel(p.x, p.y, p.color);
-        })
-        .subscribe((status) => {
-          // console.log("Realtime status:", status);
-        });
-    }
-
-    // Координата есептеу (CSS масштабын ескеріп)
-    function clientToGrid(e) {
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      const x = Math.floor((e.clientX - rect.left) * scaleX);
-      const y = Math.floor((e.clientY - rect.top) * scaleY);
-      return { x, y };
-    }
-
-    // Бір ұяшықты салу (DB-ге upsert, unique(x,y) керек)
-    let busy = false;
-    async function paintAt(x, y, color) {
-      if (busy) return; // қарапайым қорғаныс, шамадан тыс сұранысты азайту
-      busy = true;
-      try {
-        // upsert: бар болса — жаңартады, жоқ болса — қосады
-        const { error } = await supabase
-          .from("pixels")
-          .upsert({ x, y, color }, { onConflict: "x,y" });
-        if (error) console.error("Upsert error:", error);
-        // Локалда бірден саламыз (реалтаймды күтпей)
-        drawPixel(x, y, color);
-      } finally {
-        // шағын кідіріс — тым жиі жазуды азайту
-        setTimeout(() => (busy = false), 8);
-      }
-    }
-
-    // Mouse drawing
-    let isDown = false;
-    let currentColor = colorPicker.value;
-
-    colorPicker.addEventListener("input", () => {
-      currentColor = colorPicker.value;
-    });
-
-    eraserBtn.addEventListener("click", () => {
-      currentColor = "#ffffff"; // өшіргіш — ақ түс
-      colorPicker.value = "#ffffff";
-    });
-
-    clearLocalBtn.addEventListener("click", () => {
-      initEmptyBoard(); // тек экранды тазартады (DB-ні тазаламайды)
-      loadAll();        // DB-дегі бар пиксельдерді қайта салады
-    });
-
-    canvas.addEventListener("mousedown", (e) => {
-      isDown = true;
-      const { x, y } = clientToGrid(e);
-      paintAt(x, y, currentColor);
-    });
-
-    canvas.addEventListener("mousemove", (e) => {
-      if (!isDown) return;
-      const { x, y } = clientToGrid(e);
-      paintAt(x, y, currentColor);
-    });
-
-    window.addEventListener("mouseup", () => { isDown = false; });
-
-    // Бастау
-    await loadAll();
-    subscribeRealtime();
-  </script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
