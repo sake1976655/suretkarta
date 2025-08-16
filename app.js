@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // 🔑 Өз Supabase деректерін қой
 const SUPABASE_URL = "https://aidxkrtvmjdoedgucjbt.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpZHhrcnR2bWpkb2VkZ3VjamJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNzM4MjcsImV4cCI6MjA3MDg0OTgyN30.B6vSxEu-UWQdWJWig5AE2K3KU6LWZgnSO4wFj-vT0t8"; // Project settings → API → anon public
-const supabase = createClient(https://aidxkrtvmjdoedgucjbt.supabase.co,eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpZHhrcnR2bWpkb2VkZ3VjamJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNzM4MjcsImV4cCI6MjA3MDg0OTgyN30.B6vSxEu-UWQdWJWig5AE2K3KU6LWZgnSO4wFj-vT0t8);
+const supabase = createClient("https://aidxkrtvmjdoedgucjbt.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpZHhrcnR2bWpkb2VkZ3VjamJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNzM4MjcsImV4cCI6MjA3MDg0OTgyN30.B6vSxEu-UWQdWJWig5AE2K3KU6LWZgnSO4wFj-vT0t8);
 
 const canvas = document.getElementById("board");
 const ctx = canvas.getContext("2d");
